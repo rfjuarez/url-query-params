@@ -6,7 +6,6 @@ import dialect.sqlserver.SqlServerInterpreter;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,11 +24,11 @@ public class UseCaseTest {
         /*
         Given a URL like:
         https://somehost/great_women?name=in(Heidy;Ada;Marie)&age=gt(20)&" +
-                "__columns__=prj(name;age)&" +
+                "__columns__=proj(name;age)&" +
                 "__order_by__=ob(desc(age))
         */
         //The mapping to a Map<String, String> would be:
-        final Map<String, String> urlQueryParams= Map.of(
+        final Map<String, String> urlQueryParams = Map.of(
                 "name", "in(Heidy;Ada;Marie)",
                 "age", "gt(20)",
                 "__columns__", "proj(name;age)",
@@ -40,11 +39,10 @@ public class UseCaseTest {
                 "name", String::valueOf,
                 "age", Integer::parseInt
         );
-        final Query query = UrlQueryParamsInterpreter.builder("great_women",fieldParsers)
+        final Query query = UrlQueryParamsInterpreter.builder("great_women", fieldParsers)
                 .translate(urlQueryParams);
-        final Set<String> supportedFields = Set.of("name", "age");
 
-        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", supportedFields,Map.of()).translate(query);
+        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", Map.of()).translate(query);
 
         assertThat(sqlQuery.getQuery()).isEqualTo(SQL_QUERY);
         assertThat(sqlQuery.getArguments()).containsEntry("AGE", 20);
