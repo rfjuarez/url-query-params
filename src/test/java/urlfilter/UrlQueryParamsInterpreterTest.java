@@ -23,7 +23,8 @@ class UrlQueryParamsInterpreterTest {
 
         Translator<Map<String, String>, Query> interpreter = UrlQueryParamsInterpreter.builder(
                 "great_women",
-                Map.of("name", String::valueOf));
+                Map.of("name", String::valueOf,
+                        "age", Integer::valueOf));
         Query query = interpreter.translate(input);
 
         assertThat(query).extracting(Query::getColumns).isEqualTo(

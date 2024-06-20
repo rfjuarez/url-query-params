@@ -5,12 +5,10 @@ import dialect.sqlserver.parser.OperationsParser;
 import util.Preconditions;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SqlServerInterpreter {
 
-    public static Translator<Query, SQLQuery> builder(final String schema, final Set<String> supportedFields, final Map<String, String> aliasMap) {
-        Preconditions.nonNullOrEmptyArgument(supportedFields, "Field supported cannot be null or empty");
+    public static Translator<Query, SQLQuery> builder(final String schema, final Map<String, String> aliasMap) {
 
         return query -> {
             Preconditions.nonNullArgument(query, "Query cannot be null");
@@ -18,12 +16,11 @@ public class SqlServerInterpreter {
             Preconditions.nonNullOrEmptyArgument(query.getFilters(), "Filters cannot be null or empty");
 
             final List<SQLQuery> filters = query.getFilters().stream()
-                    .filter(filter -> supportedFields.contains(filter.getName()))
                     .map(filter -> OperationsParser.filterParser(filter.getOperation().getOperator()).parse(filter, aliasMap)
                     ).toList();
 
             final SQLQuery queryFilters = SQLQuery.builder()
-                    .query(buildProjection(query.getColumns(), supportedFields, aliasMap) +
+                    .query(buildProjection(query.getColumns(), aliasMap) +
                             buildFrom(schema, query.getResource(), aliasMap) +
                             buildWhere(filters))
                     .arguments(filters.stream().map(SQLQuery::getArguments).reduce(new HashMap<>(), (a, b) -> {
@@ -35,7 +32,7 @@ public class SqlServerInterpreter {
 
             queryFilters.getArguments().putAll(queryPage.getArguments());
 
-            final SQLQuery queryOrderBy = buildOrderBy(query.getOrderBy(), supportedFields, aliasMap);
+            final SQLQuery queryOrderBy = buildOrderBy(query.getOrderBy(), aliasMap);
 
             return SQLQuery.builder()
                     .query(queryFilters.getQuery() + queryOrderBy.getQuery() + queryPage.getQuery())
@@ -44,14 +41,8 @@ public class SqlServerInterpreter {
         };
     }
 
-    static String buildProjection(final Set<String> columns, final Set<String> supportedFields, final Map<String, String> aliasMap) {
-        final Set<String> supportedColumns = Optional.ofNullable(columns).map(
-                c -> c.stream()
-                        .filter(supportedFields::contains)
-                        .collect(Collectors.toSet())
-        ).orElse(supportedFields);
-
-        return "SELECT " + String.join(", ", supportedColumns
+    static String buildProjection(final Set<String> columns, final Map<String, String> aliasMap) {
+        return "SELECT " + String.join(", ", columns
                 .stream()
                 .map(c -> OperationsParser.getFieldNameOrAlias(c, aliasMap))
                 .sorted()
@@ -70,16 +61,11 @@ public class SqlServerInterpreter {
         return " WHERE " + String.join(" AND ", filters.stream().map(SQLQuery::getQuery).toList());
     }
 
-    static SQLQuery buildOrderBy(final Set<OrderBy> orderBySet, final Set<String> supportedFields, final Map<String, String> aliasMap) {
+    static SQLQuery buildOrderBy(final Set<OrderBy> orderBySet, final Map<String, String> aliasMap) {
         if (orderBySet == null || orderBySet.isEmpty()) {
             return SQLQuery.builder().query("").arguments(new HashMap<>()).build();
         }
-
-        final Set<OrderBy> supportedOrderBy = orderBySet.stream()
-                .filter(orderBy -> supportedFields.contains(orderBy.getName()))
-                .collect(Collectors.toSet());
-
-        return OperationsParser.orderByParser().parser(supportedOrderBy, aliasMap);
+        return OperationsParser.orderByParser().parser(orderBySet, aliasMap);
     }
 
     static SQLQuery buildPage(final Page page) {

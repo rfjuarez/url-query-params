@@ -27,8 +27,6 @@ class SqlFilterInterpreterTest {
             " WHERE cc.name IN (:NAME)" +
             " OFFSET :OFFSET ROWS FETCH NEXT :SIZE ROWS ONLY";
 
-    final static Set<String> SUPPORTED_FIELDS = Set.of("name", "age");
-
     @Test
     void queryWithOB() {
         final Query query = Query.builder()
@@ -56,7 +54,7 @@ class SqlFilterInterpreterTest {
                 )
                 .build();
         final Map<String, String> aliasMap = Map.of("name", "cc.name");
-        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", SUPPORTED_FIELDS,aliasMap).translate(query);
+        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", aliasMap).translate(query);
 
         assertThat(sqlQuery.getQuery()).isEqualTo(SQL_QUERY_1);
     }
@@ -92,7 +90,7 @@ class SqlFilterInterpreterTest {
                 )
                 .build();
         final Map<String, String> aliasMap = Map.of("name", "cc.name");
-        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", SUPPORTED_FIELDS,aliasMap).translate(query);
+        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", aliasMap).translate(query);
 
         assertThat(sqlQuery.getQuery()).isEqualTo(SQL_QUERY_2);
     }
@@ -117,7 +115,8 @@ class SqlFilterInterpreterTest {
                 )
                 .build();
         final Map<String, String> aliasMap = Map.of("name", "cc.name");
-        Assertions.assertThrows(IllegalArgumentException.class, () ->SqlServerInterpreter.builder("dbo", SUPPORTED_FIELDS,aliasMap).translate(query));
+        Assertions.assertThrows(IllegalArgumentException.class, () ->SqlServerInterpreter.builder("dbo",
+                aliasMap).translate(query));
     }
     @Test
     void queryWithoutFilters() {
@@ -132,7 +131,8 @@ class SqlFilterInterpreterTest {
                 )
                 .build();
         final Map<String, String> aliasMap = Map.of("name", "cc.name");
-        Assertions.assertThrows(IllegalArgumentException.class, () ->SqlServerInterpreter.builder("dbo", SUPPORTED_FIELDS,aliasMap).translate(query));
+        Assertions.assertThrows(IllegalArgumentException.class, () ->SqlServerInterpreter.builder("dbo",
+                aliasMap).translate(query));
     }
     @Test
     void queryWithoutPage() {
@@ -150,7 +150,8 @@ class SqlFilterInterpreterTest {
                 ))
                 .build();
         final Map<String, String> aliasMap = Map.of("name", "cc.name");
-        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo", SUPPORTED_FIELDS,aliasMap).translate(query);
+        final SQLQuery sqlQuery = SqlServerInterpreter.builder("dbo",
+                aliasMap).translate(query);
 
         assertThat(sqlQuery.getQuery()).isEqualTo(SQL_QUERY_WITH_DEFAULT_PAGE);
         assertThat(sqlQuery.getArguments().get("OFFSET")).isEqualTo(0);
